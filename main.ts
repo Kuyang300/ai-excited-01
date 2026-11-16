@@ -1,25 +1,27 @@
-// ai-excited-01 entry: copy entry.png into the make.fun output directory.
-import { copyFileSync, existsSync, mkdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+// Entry contract: one image, entry.png, at most 1 MiB. The judge reads the
+// copy this program leaves in the output directory; nothing else is graded.
+// ai-excited-01 — entrypoint: copy the entry image into the output directory.
+//
+// The competition entry is one original image (entry.png, next to this file).
+// This program places a copy of it where the judge looks for it:
+// $MAKEFUN_OUTPUT_DIR, or /output when that variable is not set.
+// Node 22, standard library only.
 
-const ENTRY_NAME = "entry.png";
-const MAX_BYTES = 1048576;
-const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+import { copyFileSync, mkdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
-if (!existsSync(ENTRY_NAME)) {
-  console.error(`error: ${ENTRY_NAME} not found in the current directory`);
+const MAX_BYTES = 1_048_576; // 1 MiB — the competition's size cap for entry.png
+const SOURCE = 'entry.png';
+
+const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const size = statSync(SOURCE).size;
+
+if (size > MAX_BYTES) {
+  console.error(`entry.png is ${size} bytes, over the 1 MiB limit (${MAX_BYTES} bytes)`);
   process.exit(1);
 }
 
-const entrySize = statSync(ENTRY_NAME).size;
-if (entrySize > MAX_BYTES) {
-  console.error(
-    `error: ${ENTRY_NAME} is ${entrySize} bytes, which exceeds the 1 MiB limit (${MAX_BYTES} bytes)`
-  );
-  process.exit(1);
-}
-
-mkdirSync(outputDir, { recursive: true });
-const copiedPath = join(outputDir, ENTRY_NAME);
-copyFileSync(ENTRY_NAME, copiedPath);
-console.log(`copied ${copiedPath} (${entrySize} bytes)`);
+mkdirSync(outDir, { recursive: true });
+const dest = join(outDir, SOURCE);
+copyFileSync(SOURCE, dest);
+console.log(`copied ${dest} (${size} bytes, ${(size / 1024).toFixed(1)} KiB)`);
